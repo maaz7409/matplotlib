@@ -1,0 +1,64 @@
+<!-- Draft for a GitHub issue on matplotlib/matplotlib. Use the "Maintenance" or blank template. -->
+
+### Title
+
+[MNT]: Offer an optional `mpl-review` self-review skill for contributors who already use AI agents
+
+### Summary
+
+Some contributors already use AI coding agents (Claude Code, Codex, Copilot, Cursor and
+others). pandas recently added a `/pandas-review` skill (a short Markdown file of
+instructions for the agent). Before asking for review, a contributor runs it on their own PR,
+and it checks the PR "the way a maintainer would". It prints findings and a verdict in the
+terminal. It never posts to GitHub and never edits code. pandas maintainers now ask
+contributors to run it and to say the result on the PR.
+
+I'd like to ask whether Matplotlib wants something similar, and if so, in what form.
+
+### Why it might help
+
+- When contributors use agents, the agent is usually never asked to check the work against
+  *Matplotlib's* rules. Typical things that slip through: a behavior change with no
+  deprecation or `next_api_changes` note, a missing `.pyi` stub update, a new baseline image
+  where `check_figures_equal` would do, or edge cases such as NaN, empty input, units or
+  `\overset`.
+- A self-check that runs **before** a maintainer looks could catch some of this, so review
+  time goes to design questions instead.
+
+### What I tried
+
+I wrote a draft skill (`.claude/skills/mpl-review/SKILL.md`, about 6 KB, adapted from the
+pandas one). I tried it on 3 open PRs and compared it with a generic AI code review using the
+same model and settings. Short version:
+
+- On a PR with a real rendering regression, both found it. The Matplotlib-specific skill also
+  checked the release-note conventions and gave a clear verdict.
+- On a small, correct PR, the generic review produced several speculative "findings", while
+  the skill said it was fine. That matters, because false alarms cost maintainers time too.
+- Details are in the linked report: <link to skill-report.md>.
+
+### Usage numbers (rough)
+
+About 6–7% of Matplotlib PR descriptions in the last 6–12 months mention Claude, and about
+2–3% of PRs have agent-written commits. In pandas the shares are much higher, so this would
+help a smaller group here. On the other hand, that group's PRs are the ones that are often
+expensive to review.
+
+### Open questions for maintainers
+
+1. Is this welcome at all, given our [AI policy](https://matplotlib.org/devdocs/devel/contribute.html#use-of-generative-ai)?
+   I'd suggest it stays **optional** and is never required. People who don't use AI are
+   unaffected, and the skill tells the contributor not to paste its output into GitHub and
+   to answer reviewers in their own words.
+2. Should it live in the repo (`.claude/skills/` or a tool-neutral location), or be linked
+   from the developer guide as an external file?
+3. Would an `AGENTS.md` (suggested in #30848 and #31457) be the better first step, with the
+   review skill as a follow-up?
+
+If there's interest, I'm happy to open a PR with the draft skill and adjust it to whatever
+conventions you prefer.
+
+### AI disclosure
+
+I used Claude Code to collect the usage numbers, draft the skill, and run the comparison.
+I checked the findings myself, and this issue text is my own.
