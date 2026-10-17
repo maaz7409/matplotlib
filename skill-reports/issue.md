@@ -31,10 +31,13 @@ I wrote a draft skill (`.claude/skills/mpl-review/SKILL.md`, about 6 KB, adapted
 pandas one). I tried it on 3 open PRs and compared it with a generic AI code review using the
 same model and settings. Short version:
 
-- On a PR with a real rendering regression, both found it. The Matplotlib-specific skill also
-  checked the release-note conventions and gave a clear verdict.
-- On a small, correct PR, the generic review produced several speculative "findings", while
-  the skill said it was fine. That matters, because false alarms cost maintainers time too.
+- The generic review found slightly more real bugs (2 of 3 vs 1 of 3), but it also reported
+  about 9 findings that were false or speculative. The skill reported none.
+- On a small, correct PR, the skill said "LGTM" and explained why. The generic review gave
+  the author 4 "issues" to chase.
+- The skill ran the tests and its examples itself, and gave a verdict (right on 2 of 3 PRs).
+- Both missed one real regression, so this is **not** a replacement for maintainer review.
+  At best it is a filter that catches the obvious things earlier.
 - Details are in the linked report: <link to skill-report.md>.
 
 ### Usage numbers (rough)
