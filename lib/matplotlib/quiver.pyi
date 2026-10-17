@@ -1,7 +1,6 @@
 import matplotlib.artist as martist
 import matplotlib.collections as mcollections
 from matplotlib.axes import Axes
-from matplotlib.backend_bases import RendererBase
 from matplotlib.figure import Figure, SubFigure
 from matplotlib.text import Text
 from matplotlib.transforms import Transform, Bbox
@@ -55,7 +54,6 @@ class QuiverKey(martist.Artist):
     def verts(self) -> Sequence[ArrayLike]: ...
     @property
     def labelsep(self) -> float: ...
-    def get_window_extent(self, renderer: RendererBase | None = ...) -> Bbox: ...
     def set_figure(self, fig: Figure | SubFigure) -> None: ...
 
 class Quiver(mcollections.PolyCollection):

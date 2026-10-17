@@ -1111,18 +1111,6 @@ def test_empty_fancyarrow():
     assert arrow is not None
 
 
-@pytest.mark.parametrize("arrowstyle", ["-", "->", "simple"])
-@pytest.mark.parametrize("posA, posB", [((np.nan, 0), (1, 1)),
-                                        ((0, 0), (1, np.inf))])
-def test_fancyarrowpatch_nonfinite_positions(arrowstyle, posA, posB):
-    # The arrow is undefined, so it has an empty path and is not drawn.
-    fig, ax = plt.subplots()
-    arrow = ax.add_patch(
-        FancyArrowPatch(posA, posB, arrowstyle=arrowstyle, mutation_scale=10))
-    fig.draw_without_rendering()
-    assert len(arrow.get_path().vertices) == 0
-
-
 def test_patch_edgegapcolor_getter_setter():
     """Test that edgegapcolor can be set and retrieved."""
     patch = Rectangle((0, 0), 1, 1)

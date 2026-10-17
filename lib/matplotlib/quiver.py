@@ -23,7 +23,6 @@ from matplotlib import _api, cbook, _docstring
 import matplotlib.artist as martist
 import matplotlib.collections as mcollections
 from matplotlib.patches import CirclePolygon
-import matplotlib.path as mpath
 import matplotlib.text as mtext
 import matplotlib.transforms as transforms
 
@@ -397,8 +396,6 @@ class QuiverKey(martist.Artist):
         if self.color is not None:
             self.vector.set_color(self.color)
         self._dpi_at_last_init = self.Q.axes.get_figure(root=True).dpi
-        pos = self.get_transform().transform((self.X, self.Y))
-        self.text.set_position(pos + self._text_shift())
 
     def _text_shift(self):
         return {
@@ -412,27 +409,10 @@ class QuiverKey(martist.Artist):
     def draw(self, renderer):
         self._init()
         self.vector.draw(renderer)
+        pos = self.get_transform().transform((self.X, self.Y))
+        self.text.set_position(pos + self._text_shift())
         self.text.draw(renderer)
         self.stale = False
-
-    def get_window_extent(self, renderer=None):
-        # docstring inherited
-        if renderer is None:
-            renderer = self.get_figure(root=True)._get_renderer()
-        self._init()
-        bboxes = []
-        if self.vector.get_visible():
-            # Collection.get_window_extent does not handle offsets that are not
-            # in data coordinates, so compute the arrow extent directly.
-            offsets = self.vector.get_offset_transform().transform(
-                self.vector.get_offsets())
-            bboxes.append(mpath.get_path_collection_extents(
-                self.vector.get_transform(), self.vector.get_paths(),
-                self.vector.get_transforms(), offsets,
-                transforms.IdentityTransform()))
-        if self.text.get_visible():
-            bboxes.append(self.text.get_window_extent(renderer))
-        return transforms.Bbox.union(bboxes) if bboxes else transforms.Bbox.null()
 
     def _set_transform(self):
         fig = self.Q.axes.get_figure(root=False)

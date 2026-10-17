@@ -327,27 +327,6 @@ def test_quiverkey_angles_scale_units_cartesian():
         assert len(qk.vector.get_paths()) == 1
 
 
-@pytest.mark.parametrize('coordinates', ['axes', 'figure', 'data', 'inches'])
-def test_quiverkey_window_extent(coordinates):
-    # GH 18530
-    fig, ax = plt.subplots()
-    q = ax.quiver([0, 1], [0, 1], [1, 1], [1, 1])
-    qk = ax.quiverkey(q, 0.5, 0.5, 1, 'Label', labelpos='E',
-                      coordinates=coordinates)
-    # Must work before the first draw.
-    bbox = qk.get_window_extent()
-    text_bbox = qk.text.get_window_extent()
-    # With labelpos='E', the arrow head is at (X, Y) and the label is to its
-    # right, so the key spans from the arrow tail to the end of the label.
-    head_x, head_y = qk.get_transform().transform((0.5, 0.5))
-    assert bbox.x0 < head_x < text_bbox.x0
-    assert bbox.x1 == text_bbox.x1
-    assert bbox.y0 < head_y < bbox.y1
-    assert bbox.y0 <= text_bbox.y0 and text_bbox.y1 <= bbox.y1
-    fig.canvas.draw()
-    assert qk.get_window_extent().bounds == pytest.approx(bbox.bounds)
-
-
 def test_quiver_setuvc_numbers():
     """Check that it is possible to set all arrow UVC to the same numbers"""
 

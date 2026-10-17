@@ -2300,10 +2300,7 @@ or callable, default: value of *xycoords*
         bboxes = [text_bbox]
 
         if self.arrow_patch is not None:
-            arrow_bbox = self.arrow_patch.get_window_extent()
-            # The arrow is not drawn (null bbox) if an endpoint is not finite.
-            if np.isfinite(arrow_bbox.extents).all():
-                bboxes.append(arrow_bbox)
+            bboxes.append(self.arrow_patch.get_window_extent())
 
         return Bbox.union(bboxes)
 
