@@ -1,97 +1,166 @@
 # AI-agent usage in pandas vs Matplotlib PRs
 
-Collected 2026-10-17. Windows: **last 12 months** (PRs created on or after 2025-10-17) and
-**last 6 months** (on or after 2026-04-17). Open, closed and merged PRs are all counted.
+Collected 2026-10-17. **This is a rewrite, made with full GitHub API access.** The first
+version had no API access and undercounted Matplotlib's AI use about 4–5×. The section
+"What changed from the first version" explains why.
 
-## How this was measured (and the limits)
+Windows: **12 months** (PRs created on or after 2025-10-17), **6 months** (on or after
+2026-04-17), and **since 2026-08-14**. Since 2026-08-14 is the fair comparison window,
+because it is the first period in which *both* repos ask every PR a yes/no AI question.
+Bots (dependabot, pre-commit-ci, Copilot agent and similar) and auto-backport PRs are
+excluded. Open, closed and merged PRs are all counted.
 
-This cloud session could not use the GitHub API for the upstream repos, so I used two
-independent sources:
+## Headline
 
-- **A. GitHub search over PR descriptions** (`is:pr created:>=DATE <word> in:body`, read from
-  github.com search pages). This catches AI disclosures written in the PR text, for example
-  Matplotlib's "AI Disclosure" section or pandas' tool/model/effort line. It is an **upper
-  bound**: a body that says "no Claude was used" also matches, and bot PRs are in the totals.
-- **B. Commit trailers.** I fetched every PR head (`refs/pull/*/head`) over git and scanned
-  each PR's own commits for agent fingerprints: `Co-Authored-By: Claude`, `noreply@anthropic.com`,
-  `Generated with Claude Code`, `claude.ai/code`, Copilot coding agent, `cursoragent@cursor.com`,
-  Codex, Gemini/Jules, Aider, Devin, OpenHands, Amp and Junie. Bot authors (dependabot,
-  pre-commit-ci and similar) are excluded. This is a **lower bound**: contributors who strip
-  trailers, squash locally, or use chat assistants leave no trace.
+| Since 2026-08-14 (both repos ask yes/no) | pandas, all | pandas, without its top account | **Matplotlib** |
+|---|---:|---:|---:|
+| Human PRs | 1,258 | 509 | 169 |
+| PRs showing AI use | 970 (77%) | 241 (**47%**) | 76 (**45%**) |
+| …naming Claude | 874 (69%) | 145 (28%) | 24 (14%) |
+| PR authors | 211 | 210 | 59 |
+| Authors with ≥1 AI PR | 122 (58%) | 121 (58%) | 37 (**63%**) |
 
-The true share is somewhere between A and B.
+**Once pandas' single heaviest user is excluded, Matplotlib's AI use is about the same as
+pandas': roughly 45% of PRs and about 60% of authors.** The real difference is *which* tool
+people name. pandas contributors mostly name Claude. Matplotlib contributors usually just
+write "AI" or "an AI assistant" without naming a tool, and Claude is the most-named one.
 
-## A. PR descriptions mentioning a tool (GitHub search)
+"Shows AI use" means one of the following:
+- **Matplotlib**: the PR's "AI Disclosure" section says AI was used, or a commit carries an
+  agent trailer, or the PR has the `ai-contribution` label.
+- **pandas**: the "I used AI" checkbox is ticked, or the PR text names an AI tool and does
+  not tick "I did not use AI".
 
-| | pandas 12 mo | pandas 6 mo | Matplotlib 12 mo | Matplotlib 6 mo |
-|---|---:|---:|---:|---:|
-| All PRs created | 4,617 | 2,558 | 1,387 | 776 |
-| Body mentions **Claude** | 1,607 (**34.8%**) | 1,228 (**48.0%**) | 82 (**5.9%**) | 57 (**7.3%**) |
-| …of which merged | 1,193 | – | 41 | – |
-| Body mentions Copilot | 28 (0.6%) | – | 17 (1.2%) | – |
-| Body mentions Cursor / Codex / Gemini / ChatGPT | 89 (1.9%) | – | 47 (3.4%) | – |
+## Matplotlib in detail
 
-## B. Commits carrying an agent trailer (git scan, human-authored PRs only)
+### The AI Disclosure section
 
-| | pandas 12 mo | pandas 6 mo | Matplotlib 12 mo | Matplotlib 6 mo |
-|---|---:|---:|---:|---:|
-| PRs scanned | 4,475 | 2,530 | 1,058 | 566 |
-| PRs with a **Claude Code** trailer | 1,903 (42.5%) | 1,484 (58.7%) | 13 (1.2%) | 10 (1.8%) |
-| PRs with **any** agent trailer | 1,911 (42.7%) | 1,490 (58.9%) | 21 (2.0%) | 15 (2.7%) |
-| Distinct PR authors | 969 | 485 | 358 | 186 |
-| Authors with ≥1 Claude Code PR | 113 (11.7%) | 81 (16.7%) | 11 (3.1%) | 8 (4.3%) |
-| Other agents seen (PRs) | Cursor 5, Copilot 4, other 1 | Cursor 4, Copilot 1, other 1 | Copilot 5, Cursor 3 | Cursor 3, Copilot 2 |
+The PR template has had an "AI Disclosure" section since Feb–Mar 2026, and has always asked
+for it since #31507 (2026-04-16). Every answer from the last 6 months was classified as
+yes / no / empty by regex. The ~40 that didn't match a pattern were read and labelled by
+hand.
 
-### The pandas headline number is one person
-
-In pandas, **1,702 of the 1,903 Claude Code PRs (89%) come from a single core maintainer
-account, jbrockmendel**, who also wrote `/pandas-review`. The top 5 accounts make up 93% of
-them. With that account excluded:
-
-| pandas, excluding the top account | 12 mo | 6 mo |
+| Human PRs | 6 months | 12 months |
 |---|---:|---:|
-| PRs | 2,629 | 1,135 |
-| PRs with a Claude Code trailer | 201 (**7.6%**) | 138 (**12.2%**) |
+| PRs | 526 | 1,071 |
+| Section answered (yes or no) | 358 | 461 |
+| **Answered "AI used"** | **157 (44% of answered, 30% of all)** | 206 (45% of answered) |
+| Answered "no AI" | 201 | 255 |
+| Section missing or empty | 168 | 606 (mostly before the section existed) |
+| PRs with an agent commit trailer | 13 (Claude 8, Cursor 3, Copilot 2) | 21 |
+| `ai-contribution` label ("AI generated without a human in the loop") | 33, all closed | 38 |
+| **Any AI signal** (disclosure, trailer or label) | **192 (36.5%)** | 252 (23.5%; lower bound, since the section did not exist for the first 5 months) |
+| Authors with any AI signal | 104 of 174 (60%) | 137 of 340 (40%) |
 
-In Matplotlib, Claude Code PRs are spread across many accounts (no account has more than 2).
+**Tools named in the 157 "AI used" answers (6 months):**
 
-### Monthly trend (PRs created / PRs with a Claude trailer)
+| Tool | Answers |
+|---|---:|
+| No tool named ("AI", "an AI assistant", "LLM") | 79 |
+| Claude / Claude Code | 55 |
+| Codex / ChatGPT | 15 |
+| Cursor | 5 |
+| Copilot | 4 |
+| Other | 1 |
 
-| Month | pandas | Matplotlib |
+**What the AI was used for (rough regex split):**
+- 92 answers say it wrote or drafted code or tests.
+- 65 say it only helped them explore, debug, review or proofread.
+- 51 name an agent tool (Claude Code, Codex, Cursor, Copilot and so on) that could run a
+  skill file directly.
+
+**Outcomes (6 months):**
+
+| | Merged | Closed unmerged | Open |
+|---|---:|---:|---:|
+| PRs with an AI signal | 40% | 33% | 27% |
+| PRs without one | 75% | 15% | 11% |
+
+PRs with an AI signal are merged about half as often and closed unmerged about twice as
+often. Maintainer review time is being spent on those closed PRs.
+
+**Monthly trend** (human PRs; answered the section; said AI was used):
+
+| Month | PRs | Answered | AI used |
+|---|---:|---:|---:|
+| 2026-03 | 149 | 71 | 41 |
+| 2026-04 | 103 | 61 | 20 |
+| 2026-05 | 109 | 53 | 23 |
+| 2026-06 | 75 | 44 | 19 |
+| 2026-07 | 90 | 64 | 26 |
+| 2026-08 | 65 | 47 | 13 |
+| 2026-09 | 80 | 67 | 38 |
+| 2026-10 (to 17th) | 53 | 51 | 25 |
+
+Before March 2026 there was no disclosure section, so AI use in that period can't be seen
+(only 0–4 trailer PRs a month).
+
+## pandas in detail
+
+pandas' template only asks "I used AI / I did **not** use AI" since #66767 (2026-08-14).
+Before that, it only had "*if* I used AI, I prompted it to follow AGENTS.md". So for
+pandas, the 6- and 12-month numbers are lower bounds based on tool names.
+
+| Human PRs | 6 months | 12 months |
+|---|---:|---:|
+| PRs | 2,400 | 4,340 |
+| Share from the top account (jbrockmendel, author of `/pandas-review`) | 54% | 40% |
+| PRs showing AI use, all accounts | 1,230 (51%) | 1,619 (37%) |
+| PRs showing AI use, without the top account | 281 (25%) | 311 (12%) |
+| PRs naming Claude, without the top account | 172 (15.5%) | 192 (7.4%) |
+
+**Since 2026-08-14, excluding the top account:**
+- 210 of 509 PRs ticked a checkbox.
+- 177 of those 210 (84%) ticked "I used AI".
+
+**Commit trailers** (from the first version's git scan of `refs/pull/*/head`; not re-run):
+- 1,903 pandas PRs carry a Claude Code trailer over 12 months.
+- 89% of those are from the top account.
+
+The PR-text search in the first version was correct for pandas. Only about 170 PR
+descriptions contain the template's example text `claude opus 4.8 (xhigh)`, and the counts
+above remove that text before matching.
+
+## What changed from the first version
+
+| Claim in the first version | Corrected | Why |
 |---|---|---|
-| 2025-10 | 301 / 0 | 47 / 0 |
-| 2025-12 | 204 / 13 | 64 / 0 |
-| 2026-02 | 281 / 12 | 88 / 1 |
-| 2026-03 | 488 / 230 | 134 / 1 |
-| 2026-05 | 292 / 132 | 100 / 2 |
-| 2026-07 | 354 / 208 | 95 / 1 |
-| 2026-09 | 617 / 370 | 106 / 1 |
-| 2026-10 (to 17th) | 470 / 330 | 59 / 1 |
+| Matplotlib: "about 6–7% of PR descriptions mention Claude" | That figure is correct, but **about 30–45% of Matplotlib PRs disclose AI use** | Most Matplotlib disclosures say "AI" without naming a tool, so searching for "Claude" missed them |
+| Matplotlib: "only about 2–3% of PRs carry any agent trailer, so it would reach a small minority" | The trailer count is correct (verified: 13 PRs in 6 months), but trailers are a poor proxy here | Most Matplotlib contributors' AI use leaves no trailer |
+| "The case is much stronger for pandas than for Matplotlib" | **The AI usage level is about the same.** The difference is pandas' single power user, plus the choice of tool | See the headline table |
+| Monthly trend: "Matplotlib flat at 1–2 trailer PRs/month" | 13–41 PRs a month say they used AI | Wrong measure |
 
-pandas jumped in March 2026 and has kept climbing. Matplotlib has stayed flat at about 1–2
-trailer-PRs a month.
+## What this means for the skill
 
-## What this means
+- **Reach**: In Matplotlib, about 45% of recent PRs and about 60% of recent authors used AI.
+  About a third of those named an agent that can load a `SKILL.md` directly (Claude Code,
+  Codex, Cursor, Copilot, Gemini CLI). For the rest, the file is plain Markdown and can be
+  pasted into any chat model. People who don't use AI are unaffected.
+- **Need**: 33 PRs in 6 months were closed with the `ai-contribution` label. Overall, AI PRs
+  are closed unmerged at about twice the rate of other PRs. A pre-review step that runs
+  before a maintainer looks targets exactly this group.
+- **Fit**: The usage argument is now similar for both projects. The remaining differences
+  are cultural: Matplotlib's stricter AI policy, and no maintainer currently championing a
+  skill. See `skill-report.md`.
 
-- **pandas**: Claude Code is by far the dominant agent; other agents barely show up in
-  trailers. Outside the heaviest user, about 1 in 13 PRs over 12 months, and 1 in 8 over 6
-  months, carries a Claude Code trailer, and about 35–48% of PR descriptions mention Claude.
-  Asking contributors to run `/pandas-review` reaches a large and growing group.
-- **Matplotlib**: about 6–7% of PR descriptions mention Claude and about 2–3% of PRs carry
-  any agent trailer. The gap between A and B suggests most Matplotlib AI use is chat or
-  assistant use declared in the "AI Disclosure" section, not agent-authored commits. A review
-  skill would reach a **small minority** of contributors.
-- **Contributors without Claude Code**: `SKILL.md` follows the open Agent Skills format,
-  which other agent CLIs and IDE agents (for example Codex, Copilot, Cursor and Gemini CLI)
-  can also load. It is plain Markdown, so any chat LLM can be pointed at it. People who use
-  no AI at all are unaffected; the skill must stay optional for them.
-- **Other agents with an applicable skill format** together account for roughly 0.5–3.5% of
-  PRs in either repo by these measures (Copilot plus Cursor/Codex/Gemini mentions).
+## Reproduce
 
-### Verdict for question 2
+The scripts are in `scripts/`:
+- `fetch.py`: GraphQL; bodies, labels and commit messages.
+- `fetch_rest.py`: REST search; bodies only, and lighter on rate limits.
+- `classify.py`: parses the disclosure section and detects trailers.
 
-**The case is much stronger for pandas than for Matplotlib.** pandas has a large and rising
-share of Claude Code PRs, an `AGENTS.md`, and a maintainer who already backs the workflow.
-Technically the skill works for Matplotlib too, but only about 2–7% of its PRs would be
-covered. So it should be pitched as an optional self-check for contributors who already use
-an agent, not as a request to every contributor.
+```bash
+python scripts/fetch.py matplotlib/matplotlib 2025-10-17 2026-10-18 mpl.json 14
+python scripts/classify.py mpl.json mpl_rows.json
+python scripts/fetch_rest.py pandas-dev/pandas 2025-10-17 2026-10-18 pandas.json
+```
+
+GraphQL with nested commits quickly hits GitHub's secondary rate limit. Use the REST
+script for large repos.
+
+**Limits**:
+- The yes/no classification uses regex plus hand-labelling of about 40 unclear answers, so
+  expect a few percent error.
+- Disclosures are self-reported, and some AI use goes undisclosed.
+- Templates differ between the repos (Matplotlib uses free text; pandas uses checkboxes).

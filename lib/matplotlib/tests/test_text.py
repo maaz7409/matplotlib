@@ -250,6 +250,35 @@ def test_annotation_contains():
     assert ann.contains(event) == (False, {})
 
 
+@check_figures_equal()
+def test_annotation_arrow_nonfinite_endpoint(fig_test, fig_ref):
+    # An arrow from or to a non-finite point is not drawn (instead of raising).
+    ax = fig_test.add_subplot(121, projection="polar")
+    ax.set_ylim(.25, 1.25)  # The origin (xytext) gets transformed to nan.
+    ax.annotate("", (0, .5), (0, 0), arrowprops={})
+    ax = fig_test.add_subplot(122)
+    ax.annotate("", (0, 0), (np.nan, np.nan), arrowprops={})
+    ax.annotate("text", (np.nan, .5), xycoords="axes fraction", xytext=(.5, .5),
+                arrowprops={"arrowstyle": "->"})
+
+    ax = fig_ref.add_subplot(121, projection="polar")
+    ax.set_ylim(.25, 1.25)
+    ax = fig_ref.add_subplot(122)
+    ax.annotate("text", (.5, .5), xycoords="axes fraction")
+
+
+def test_annotation_arrow_nonfinite_endpoint_extent():
+    fig, ax = plt.subplots()
+    ann = ax.annotate("text", (np.nan, .5), xycoords="axes fraction",
+                      xytext=(.5, .5), arrowprops={})
+    fig.draw_without_rendering()
+    text_bbox = Text.get_window_extent(ann)
+    assert ann.get_window_extent().bounds == text_bbox.bounds
+    event = MouseEvent("motion_notify_event", fig.canvas,
+                       *(text_bbox.p0 + text_bbox.size / 2))
+    assert ann.contains(event)[0]
+
+
 @pytest.mark.parametrize('err, xycoords, match', (
     (TypeError, print, "xycoords callable must return a BboxBase or Transform, not a"),
     (TypeError, [0, 0], r"'xycoords' must be an instance of str, tuple"),

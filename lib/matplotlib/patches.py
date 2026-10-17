@@ -4622,6 +4622,10 @@ default: 'arc3'
             posA = self._convert_xy_units(self._posA_posB[0])
             posB = self._convert_xy_units(self._posA_posB[1])
             (posA, posB) = self.get_transform().transform((posA, posB))
+            if not np.isfinite([posA, posB]).all():
+                # The arrow is undefined (e.g. an endpoint got transformed to
+                # nan); don't try to connect, clip or mutate it.
+                return Path(np.empty((0, 2))), False
             _path = self.get_connectionstyle()(posA, posB,
                                                patchA=self.patchA,
                                                patchB=self.patchB,

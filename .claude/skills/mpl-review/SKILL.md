@@ -3,7 +3,7 @@ name: mpl-review
 description: Self-review your own Matplotlib PR (or local branch before opening one) the way a Matplotlib maintainer would. Prints findings and a verdict in the terminal; never posts to GitHub or edits files.
 disable-model-invocation: true
 argument-hint: "[PR number]"
-allowed-tools: Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr list *), Bash(gh api -X GET *), Bash(git diff *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git branch --show-current), Bash(git remote -v), Bash(git show *), Bash(git log *), Bash(git status *), Bash(pytest *), Bash(python -m pytest *), Bash(python -c *), Read, Grep, Glob
+allowed-tools: Bash(gh pr view *), Bash(gh pr diff *), Bash(gh pr list *), Bash(gh api -X GET *), Bash(git diff *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git branch --show-current), Bash(git remote -v), Bash(git show *), Bash(git log *), Bash(git status *), Bash(pytest *), Bash(python -m pytest *), Bash(python -c *), Read, Grep, Glob, Agent
 ---
 
 Review a Matplotlib PR as a maintainer who did not write it, even if you did, and report
@@ -37,9 +37,13 @@ Where a maintainer on the thread asked for something that conflicts with this fi
 
 Grep/Read the surrounding code and compare with how Matplotlib already does it. Consult
 `doc/devel/{coding_guide,api_changes,testing,document}.rst` only when a question arises.
-If the local build is the code under review, run the PR's new/changed tests and the existing
-test file for each touched module (`pytest lib/matplotlib/tests/test_<mod>.py -x -q`), and
-every repro you report; show real output. If import/build fails, say so and review by reading.
+First check `python -c "import matplotlib; print(matplotlib.__file__)"` resolves into this tree
+(an editable install elsewhere tests the wrong code). If it does and the tree is the code under
+review, run the PR's new/changed tests and the existing test file for each touched module
+(`pytest lib/matplotlib/tests/test_<mod>.py -x -q`), and every repro you report; show real
+output. Otherwise say so and review by reading; don't build or install packages. To compare
+with `main`, never swap tracked files, even temporarily: `git show <base>:<path>` into a temp
+dir and load it from there.
 
 ## 4. What to look for (priority order)
 
@@ -52,8 +56,14 @@ every repro you report; show real output. If import/build fails, say so and revi
    integer vs float, datetime/category units, log/inverted axes, 2-D vs 1-D, `None` as
    "unset" vs a real value, rcParams defaults vs explicit kwargs, re-adding/removing artists,
    repeated draws, `stale` not set after a state change, DPI/savefig vs screen, and other
-   backends that share the touched code. Partial coverage of sibling paths is an optional
-   follow-up, not a defect.
+   backends that share the touched code. When state is copied, rebuilt from getters or
+   round-tripped, remember getters return *resolved* values (RGBA with alpha baked in, resolved
+   fonts), so feeding them back can re-apply alpha or defaults; probe `'none'`, `None`,
+   `'auto'`, `'inherit'`, alpha, and rcParams-derived defaults. Partial coverage of sibling
+   paths is an optional follow-up, not a defect.
+   **Changed baseline images are claims, not evidence.** For each modified baseline, state
+   what changed and check it against main, TeX/usetex, or documented behavior; an author
+   calling it "correct" proves nothing.
 4. **API policy**: any user-visible behavior or signature change to public API needs the
    deprecation machinery (`_api.deprecated`, `_api.warn_deprecated`,
    `_api.make_keyword_only`, `_api.rename_parameter`, ...) and a note in
@@ -70,6 +80,16 @@ every repro you report; show real output. If import/build fails, say so and revi
 
 Do not report: things that are fine, PR hygiene (labels, milestone, checkboxes, CI status),
 description-vs-diff drift, or anything `prek`/linters catch.
+
+**Bug hunt.** Before writing output, launch three read-only finder agents in parallel, each
+given the diff and one angle, each returning candidate defects with a repro:
+(a) every changed condition or branch: which inputs take a different path than on `main`,
+and is each new outcome right (sets, regexes and `isinstance` checks often match more than
+intended); (b) every caller and consumer of changed code: `grep` for code that indexes,
+unpacks or round-trips its output or state, and check it still holds;
+(c) tests: does each new test fail on `main`, and can each assertion actually fail?
+Then verify every candidate yourself, by execution where possible. Drop what doesn't
+reproduce, and don't call a blocker a nit to keep the verdict short.
 
 ## 5. Output
 
