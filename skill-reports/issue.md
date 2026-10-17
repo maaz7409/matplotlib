@@ -42,10 +42,13 @@ same model and settings. Short version:
 
 ### Usage numbers (rough)
 
-About 6–7% of Matplotlib PR descriptions in the last 6–12 months mention Claude, and about
-2–3% of PRs have agent-written commits. In pandas the shares are much higher, so this would
-help a smaller group here. On the other hand, that group's PRs are the ones that are often
-expensive to review.
+Since mid-August 2026, about 45% of Matplotlib PRs say in their AI Disclosure that AI was
+used. That is similar to pandas once its single heaviest user is excluded. Over the last 6
+months, PRs that disclose AI were closed unmerged about twice as often as other PRs. So this
+group is large, and its PRs are often the expensive ones to review.
+
+One review with the skill costs roughly $0.30–0.60 on Opus and takes 1–3 minutes, as long as
+it is run in a fresh session.
 
 ### Open questions for maintainers
 

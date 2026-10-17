@@ -2,14 +2,19 @@
 
 Date: 2026-10-17 · Branch: `mpl-skill` · Skill: `.claude/skills/mpl-review/SKILL.md`
 
+> **Update (v4):** The benchmark below measured the first version (v2). The current skill is
+> the lean v4. It uses about 4× fewer tokens than v2 and much less than v3, and on the same
+> 3 PRs it found 3 of 4 verified blockers with 3 of 3 correct verdicts. See `token-report.md`.
+> The usage figures were corrected using full GitHub API access; see `stats.md`.
+
 ## TL;DR
 
 | Question | Answer |
 |---|---|
 | 0. Environment OK? | Mostly. git, push to the fork, the headless `claude` CLI and github.com pages all worked. **The GitHub API for the upstream repos was blocked**, so the stats come from git refs plus GitHub search pages, and the benchmark could not test the skill's "read the PR thread" step. |
 | 1. Is `/pandas-review` better than `/code-review`? | **Different, not strictly better.** In my test, `/code-review high` found **more real bugs** (2 of 3 blockers vs 1 of 3) but also more **noise** (about 5 findings that were false or speculative vs 0) and gives **no verdict**. The skill wins on precision, verdicts, project conventions and executed repros, and costs about 1.6× as much and takes about 1.9× as long. |
-| 2. Usage? | pandas: about 35–48% of PR descriptions mention Claude, but **89% of the Claude-trailer PRs come from one maintainer** (the skill's author). Without that account it is 7.6% (12 months) or 12.2% (6 months). Matplotlib: about 6–7% of PR descriptions, and only about 2–3% of PRs carry any agent trailer. See `stats.md`. |
-| pandas vs Matplotlib | **It fits pandas better.** It works for Matplotlib too, but would reach a small group and needs to be framed as optional because of Matplotlib's stricter AI policy. |
+| 2. Usage? | **Corrected (see `stats.md`).** Since 2026-08-14, when both repos ask a yes/no AI question: Matplotlib **45%** of PRs show AI use; pandas 77%, or **47% without its top account** (the skill's author). About 60% of authors in both repos used AI. My first estimate for Matplotlib (2–7%) was wrong: it only counted trailers and the word "Claude", while most Matplotlib disclosures just say "AI". |
+| pandas vs Matplotlib | **The usage level is similar.** The differences are cultural: Matplotlib has a stricter AI policy and no maintainer championing a skill. It works for Matplotlib, pitched as an optional self-check. |
 | 2.5. Clashes? | **No existing issue or PR proposes a review skill or adds agent files.** Related: #30848 and #31457 (AI-policy discussions, where `AGENTS.md` was suggested but never added), #31026, #31124 and #31507 (AI disclosure in the PR template). |
 | 3. Built and benchmarked? | Yes. I wrote a 6.4 KB skill (pandas-review is 9.7 KB), ran 6 timed reviews on 3 open PRs, and spent **$4.93** on benchmark runs. |
 
@@ -145,8 +150,8 @@ about $5 per PR).
   of Claude Code PRs. Asking contributors to run `/pandas-review` is a natural fit there.
 - **Matplotlib** has a stricter AI policy. It lists "solving topics that you wouldn't be able
   to solve yourself without AI" and agents interacting with GitHub as unacceptable, and the
-  PR summary must be in the author's own words. Agent use is low: about 2–3% of PRs by
-  trailers and about 6–7% by disclosures. Maintainers in #31457 and #30848 favoured
+  PR summary must be in the author's own words. AI use is *not* low: about 45% of recent PRs
+  disclose it (`stats.md`), and AI PRs are closed unmerged about twice as often. Maintainers in #31457 and #30848 favoured
   `AGENTS.md` and better review strategies over tooling, so a mandatory "run this and post
   the verdict" request like pandas' would probably not be welcome.
 - **It still works for Matplotlib.** The skill found real problems and produced correct
