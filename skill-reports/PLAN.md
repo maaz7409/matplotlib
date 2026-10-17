@@ -170,6 +170,8 @@ unaddressed comments.
 ## Session 7: accuracy round 1, error analysis → v5
 
 **Goal:** improve recall without adding false positives or tokens, **without leakage**.
+Start from the "Directions for v5" table in `skill-report.md`. Each row is a hypothesis to
+test, not something to apply blindly.
 
 **Steps**
 1. Split the held-out set: use half as a new tuning set (`tune2`) and keep half frozen
@@ -252,5 +254,5 @@ thirds of Matplotlib's AI users don't name Claude.
 - 2026-10-17 · S0: built v2 (6.4 KB); benchmarked against `/code-review high` on 32380,
   32331 and 32285 ($4.93). The user's v3 (3 parallel finder agents) burned about 4M+ tokens
   per review. v4 removed subagents, compacted the diff and thread, and capped execution:
-  0.18–0.34M tokens, 3/4 blockers and 3/3 verdicts on the tuning set. Reverted unrelated
+  0.18–0.34M tokens, 3/3 correct verdicts and 1 false positive on the tuning set. Its raw 3/4 blocker count is biased (leakage plus one self-found bug); adjusted, it is level with `/code-review` or slightly behind. The v5 directions are in `skill-report.md`. Reverted unrelated
   `lib/` changes. Seeded `skill-eval/` and `labels/tuning-set.json`.

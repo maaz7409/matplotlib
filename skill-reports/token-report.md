@@ -19,7 +19,8 @@ Each API call's `usage` block was summed.
 
 On #32331, **v4 used about 12× fewer cache-read tokens and at most a sixth of the cost of
 v3**, and it finished the review. Across all 3 PRs, v4 used **about 4× fewer tokens than v2
-and cost 60% less** ($1.23 vs $3.05).
+and cost 60% less** ($1.23 vs $3.05). These cost numbers are not affected by the accuracy
+caveats below.
 
 ## Why v3 blew up
 
@@ -106,17 +107,35 @@ EOF
 
 ## Did accuracy drop?
 
-It didn't drop in these runs; it went up. But read the caveat below.
+There's **no evidence it dropped**, but these 3 PRs **can't show it improved** either. The
+raw count below looks like a v4 win; the adjusted count after it is the honest one.
 
-| Real blocking bugs (all verified by running the code) | v2 | `/code-review high` | **v4** |
+| Real blocking bug (verified by running code) | Who found it first | v2 | `/code-review high` | v4 | Did a v4 rule come from this miss? |
+|---|---|:-:|:-:|:-:|---|
+| 32331 B1: `\overset{f}{\rightarrow}` loses relation spacing | me (manual labelling) | ❌ | ❌ | ✅ | **Yes**: "baselines are claims" |
+| 32331 B2: `<`/`>` treated as delimiters, so `$a<=b$` is narrower than `$a>=b$` | v2 and `/code-review` | ✅ | ✅ | ❌ | – |
+| 32331 B3: `\boldsymbol{=b}` / `\boldsymbol{\rightarrow}` no longer bold the operator | **v4 itself** | ❌ | ❌ | ✅ | No (genuine find) |
+| 32285 B1: `facecolor='none'` legend turns black after regeneration | `/code-review` | ❌ | ✅ | ✅ | **Yes**: "probe `'none'` and alpha" |
+| **Raw count** | | 1/4 | 2/4 | 3/4 | |
+| **Without B3** (only v4 could be credited for it) | | 1/3 | 2/3 | 2/3 | |
+| **Without B3 and the hits v4 was tuned on** | | 1/3 | **2/3** | **0/1** | |
+
+**Why the raw 3/4 overstates v4:**
+- **Leakage.** v4 keeps rules that the user's v3 added after seeing the B1 misses on these
+  exact PRs. Its hits on #32331 B1 and #32285 B1 are therefore not independent evidence.
+- **Discovery bias.** B3 joined the list only because v4 reported it. The other runs were
+  already finished and really did miss it, but any bug that *every* tool missed is
+  invisible. The list is just the bugs that someone found and verified.
+- **One run each.** v2 and v4 found different bugs in the same PR, so a single run is noisy.
+
+**What does hold without bias:**
+
+| | v2 | `/code-review high` | v4 |
 |---|:-:|:-:|:-:|
-| 32331 B1: `\overset{f}{\rightarrow}` loses relation spacing | ❌ | ❌ | ✅ |
-| 32331 B2: `<`/`>` treated as delimiters, so `$a<=b$` is narrower than `$a>=b$` | ✅ | ✅ | ❌ |
-| 32331 B3 (new, found by v4): `\boldsymbol{=b}` / `\boldsymbol{\rightarrow}` no longer bold the operator | ❌ | ❌ | ✅ |
-| 32285 B1: `facecolor='none'` legend turns black after regeneration | ❌ | ✅ | ✅ |
-| **Blockers found** | 1/4 | 2/4 | **3/4** |
-| Correct verdict (LGTM / NEEDS WORK / NEEDS WORK) | 2/3 | n/a | **3/3** |
+| Correct verdict (LGTM / NEEDS WORK / NEEDS WORK) | 2/3 | gives none | 3/3 |
 | False or speculative findings | 0 | ≈ 9 | 1 ¹ |
+| Cost for the 3 PRs | $3.05 | $1.88 | **$1.23** |
+| Tokens per review | 0.7–1.3M | 0.4–0.7M | **0.18–0.34M** |
 
 1. v4 claimed the test-71 baselines were regenerated needlessly. That is wrong: it confused
    test index 71 with 72.
@@ -124,17 +143,11 @@ It didn't drop in these runs; it went up. But read the caveat below.
 How I verified B3: on the PR, `$\boldsymbol{=b}$` renders `=` from `DejaVuSans.ttf`; on main
 it uses `DejaVuSans-Bold.ttf`. v4 also said this might raise `IndexError`; it doesn't.
 
-**Caveats, and they matter:**
-- Each PR was run **once**. Run-to-run variance is large: v2 and v4 found *different* bugs
-  in #32331.
-- The v3 heuristics that v4 kept (sentinel `'none'`, "baselines are claims") were written
-  **after** seeing the misses on these same PRs. So part of v4's recall on this set is
-  leakage, not a general improvement.
-- v4 ran nothing, because `matplotlib` wasn't importable in the clones. Its repros are
-  labelled "not executed", and I executed the ones that matter.
-
-A fair accuracy check needs a few fresh PRs the heuristics weren't tuned on. Token use,
-though, is clearly lower: about a quarter of v2's per review, and a small fraction of v3's.
+**Bottom line:**
+- **Cost:** v4 is clearly cheaper and quieter, which is what this report set out to fix.
+- **Finding bugs:** v4 vs `/code-review` is undecided, with `/code-review` possibly ahead
+  once leakage is removed. PLAN.md sessions 2 and 4 (fresh PRs, 2 runs each) decide it.
+- **Next steps:** the directions for v5 are in `skill-report.md`.
 
 ## Practical advice for contributors running the skill
 

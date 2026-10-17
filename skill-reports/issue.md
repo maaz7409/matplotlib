@@ -31,13 +31,17 @@ I wrote a draft skill (`.claude/skills/mpl-review/SKILL.md`, about 6 KB, adapted
 pandas one). I tried it on 3 open PRs and compared it with a generic AI code review using the
 same model and settings. Short version:
 
-- The generic review found slightly more real bugs (2 of 3 vs 1 of 3), but it also reported
-  about 9 findings that were false or speculative. The skill reported none.
-- On a small, correct PR, the skill said "LGTM" and explained why. The generic review gave
-  the author 4 "issues" to chase.
-- The skill ran the tests and its examples itself, and gave a verdict (right on 2 of 3 PRs).
-- Both missed one real regression, so this is **not** a replacement for maintainer review.
-  At best it is a filter that catches the obvious things earlier.
+- **Bugs found:** about the same as a generic AI review, or slightly fewer. Each found
+  different real bugs, and every tool missed at least one regression, so this is **not**
+  a replacement for maintainer review. At best it is a filter that catches obvious things
+  earlier.
+- **Noise:** much lower. The generic review reported about 9 findings that were false or
+  speculative; the current skill reported 1.
+- **Verdicts:** the skill gives one, and it was right on all 3 PRs. On a small, correct PR it
+  said "LGTM" and explained why, while the generic review gave the author 4 "issues" to chase.
+- **Cost:** about $0.30–0.60 per review on Opus.
+- **Caveat:** this was only 3 PRs, and I tuned the skill on them. I'll test it on fresh PRs
+  before claiming anything stronger.
 - Details are in the linked report: <link to skill-report.md>.
 
 ### Usage numbers (rough)

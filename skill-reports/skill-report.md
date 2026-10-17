@@ -2,17 +2,22 @@
 
 Date: 2026-10-17 · Branch: `mpl-skill` · Skill: `.claude/skills/mpl-review/SKILL.md`
 
-> **Update (v4):** The benchmark below measured the first version (v2). The current skill is
-> the lean v4. It uses about 4× fewer tokens than v2 and much less than v3, and on the same
-> 3 PRs it found 3 of 4 verified blockers with 3 of 3 correct verdicts. See `token-report.md`.
-> The usage figures were corrected using full GitHub API access; see `stats.md`.
+> **Read this first (updated):** the benchmark tables below measure the **first version
+> (v2)** of the skill, not the current v4. v4 was later run on the same 3 PRs (see
+> `token-report.md`). It costs much less, gave 3 of 3 correct verdicts, and made fewer wrong
+> findings than `/code-review`. **But these 3 PRs are no fair accuracy test for v4.** Two of
+> its three bug hits were helped by rules written after seeing these exact misses, and one
+> bug was only found by v4 itself. Adjusted for that, v4 and `/code-review` are about level on
+> finding bugs, or `/code-review` slightly ahead. A fair verdict needs fresh PRs (PLAN.md,
+> sessions 2 and 4). The usage figures were corrected using full GitHub API access; see
+> `stats.md`.
 
 ## TL;DR
 
 | Question | Answer |
 |---|---|
 | 0. Environment OK? | Mostly. git, push to the fork, the headless `claude` CLI and github.com pages all worked. **The GitHub API for the upstream repos was blocked**, so the stats come from git refs plus GitHub search pages, and the benchmark could not test the skill's "read the PR thread" step. |
-| 1. Is `/pandas-review` better than `/code-review`? | **Different, not strictly better.** In my test, `/code-review high` found **more real bugs** (2 of 3 blockers vs 1 of 3) but also more **noise** (about 5 findings that were false or speculative vs 0) and gives **no verdict**. The skill wins on precision, verdicts, project conventions and executed repros, and costs about 1.6× as much and takes about 1.9× as long. |
+| 1. Is `/pandas-review` better than `/code-review`? | **Different, not strictly better.** In my test of the first version (v2), `/code-review high` found **more real bugs** (2 of 3 blockers vs 1 of 3) but also more **noise** (about 5 findings that were false or speculative vs 0) and gives **no verdict**. The skill wins on precision, verdicts, project conventions and executed repros, and costs about 1.6× as much and takes about 1.9× as long. |
 | 2. Usage? | **Corrected (see `stats.md`).** Since 2026-08-14, when both repos ask a yes/no AI question: Matplotlib **45%** of PRs show AI use; pandas 77%, or **47% without its top account** (the skill's author). About 60% of authors in both repos used AI. My first estimate for Matplotlib (2–7%) was wrong: it only counted trailers and the word "Claude", while most Matplotlib disclosures just say "AI". |
 | pandas vs Matplotlib | **The usage level is similar.** The differences are cultural: Matplotlib has a stricter AI policy and no maintainer championing a skill. It works for Matplotlib, pitched as an optional self-check. |
 | 2.5. Clashes? | **No existing issue or PR proposes a review skill or adds agent files.** Related: #30848 and #31457 (AI-policy discussions, where `AGENTS.md` was suggested but never added), #31026, #31124 and #31507 (AI disclosure in the PR template). |
@@ -82,13 +87,13 @@ Expected verdicts: #32380 **LGTM**, #32331 **NEEDS WORK**, #32285 **NEEDS WORK**
 
 | PR | Tool | Wall time | Cost | Blockers found | Nits/optional found | False or speculative findings | Verdict |
 |---|---|---:|---:|---|---|---:|---|
-| 32380 | **/mpl-review** | 115 s | $0.74 | – (none exist) | 0/1 | **0** | **LGTM ✅** |
+| 32380 | **/mpl-review v2** | 115 s | $0.74 | – (none exist) | 0/1 | **0** | **LGTM ✅** |
 | 32380 | /code-review high | 56 s | $0.39 | – | 1/1 | 3 ¹ | none |
-| 32331 | **/mpl-review** | 289 s | $1.12 | B2 ✅ (executed repro), B1 ❌ | 3/3 | **0** | **NEEDS WORK ✅** |
+| 32331 | **/mpl-review v2** | 289 s | $1.12 | B2 ✅ (executed repro), B1 ❌ | 3/3 | **0** | **NEEDS WORK ✅** |
 | 32331 | /code-review high | 214 s | $0.91 | B2 ✅, B1 ❌ ² | 3/3 | 2 false ³ + 2 speculative ⁴ | none |
-| 32285 | **/mpl-review** | 292 s | $1.19 | B1 ❌ | 2/2 (executed repro) | **0** | NITS ONLY ❌ |
+| 32285 | **/mpl-review v2** | 292 s | $1.19 | B1 ❌ | 2/2 (executed repro) | **0** | NITS ONLY ❌ |
 | 32285 | /code-review high | 95 s | $0.58 | **B1 ✅** | 2/2 | 2 speculative ⁵ | none |
-| **Total** | **/mpl-review** | **696 s** (avg 3.9 min) | **$3.05** | **1 / 3** | 5 / 6 | **0** | **2 / 3 correct** |
+| **Total** | **/mpl-review v2** | **696 s** (avg 3.9 min) | **$3.05** | **1 / 3** | 5 / 6 | **0** | **2 / 3 correct** |
 | **Total** | /code-review high | **365 s** (avg 2.0 min) | **$1.88** | **2 / 3** | 6 / 6 | **≈ 9** | n/a |
 
 1. Claimed that `is_transform_set()` now being True is a public behavior change needing an
@@ -102,6 +107,10 @@ Expected verdicts: #32380 **LGTM**, #32331 **NEEDS WORK**, #32285 **NEEDS WORK**
 4. A performance worry (building sets per token) and a suggested rewrite of the design.
 5. `framealpha=None` after a manual `set_alpha(None)` (contrived), and an approach rewrite
    (keep the legend object).
+
+A 4th real blocker in #32331 (`\boldsymbol` no longer bolds a leading operator) was found
+later, by v4. Both tools in this table missed it. It is left out of the totals above, which
+count only the 3 blockers known at the time.
 
 ### What the numbers say
 
@@ -133,15 +142,28 @@ did better on this small sample. If the goal is "send maintainers fewer, cleaner
 tell authors when to stop", the skill fits better. The two can also be combined (run both,
 about $5 per PR).
 
-### Improvements suggested by this run (not applied, to keep the tested version honest)
+## Directions for v5
 
-1. Treat every **baseline image the PR changes** as a claim to verify: "the author says this
-   change is correct; check it against TeX, usetex or main" (would target the #32331 B1 miss).
-2. When state is copied or round-tripped (such as rebuilding an object from another's
-   getters), probe the **sentinel values** `'none'`, `None`, `'inherit'` and alpha
-   (would target the #32285 B1 miss).
-3. Optionally: "after your own pass, look for 2–3 more defects before writing the verdict",
-   to borrow some of `/code-review`'s recall without its quota.
+**What v4 already took from this run.** v4 kept the two rules suggested here after the v2
+benchmark: "changed baselines are claims" and "probe `'none'`, `None`, `'inherit'` and
+alpha". Both came from misses on the tuning PRs, which is why v4's hits on those PRs don't
+count as evidence.
+
+**Ground rules for v5.** Every direction below is a hypothesis from 3 tuning PRs.
+- Test it on held-out PRs (PLAN.md sessions 2 and 7); keep it only if it helps there.
+- Add at most ~3 lines to SKILL.md in total and stay under 7 KB.
+- Nothing may push a review above ~0.4M tokens.
+
+| # | Direction | Failure it targets (evidence) | Token cost | How to test |
+|---|---|---|---|---|
+| 1 | **Spell out what changed sets and conditions contain.** For each changed set, regex or condition, print or grep its *full* membership and check overlaps with other categories, for example "is any delimiter also a relation?". | v4 missed `<`/`>` sitting in both the delimiter and relation sets (#32331 B2); v2 and `/code-review` caught it. v4's general rule ("sets match more than intended") was there but not acted on. | One batched grep or `python -c` call | Held-out PRs that change a lookup set, regex or `isinstance` chain |
+| 2 | **Re-check anchors before reporting.** One batched grep confirms each finding's `file:line`, test name or index and quoted code. | v4's only false positive mixed up test index 71 with 72. | One call | False-positive rate on held-out |
+| 3 | **Grep callers of every changed producer.** For a changed function or node type, grep who indexes or unpacks its output (`children[1]`, tuple unpacking, `.shape`). | v4 found the `\boldsymbol` bug this way, by chance. Making it explicit should make it repeatable. | 1–2 calls | Held-out PRs that change a return shape or structure |
+| 4 | **Execution is an environment fix, not a prompt fix.** Run blocker repros only on a real dev build (PLAN session 3); never use overlay tricks. | v2 executed repros and was confident; v4 ran nothing and hedged ("may raise `IndexError`", which was wrong). | About 0 extra tokens if test output is capped | Compare held-out results with and without a dev build |
+| 5 | **Optional deep mode, off by default.** `/mpl-review deep` adds one extra bug-hunting pass in the *same* agent, never subagents. Or a "triage" mode that verifies a `/code-review` findings list and turns it into a verdict. | `/code-review` had better recall (2 vs 1 leakage-free hits); the skill had better precision. Combining them targets both. | Deep about +50%; triage about the sum of both tools (~$1 per PR) | Held-out recall and false positives for default, deep, and triage |
+| 6 | **Test thread awareness for real.** | Never tested here: the GitHub API was blocked. It is the skill's main advantage over `/code-review`. | Small with the `--jq` compaction | PLAN session 5 |
+| 7 | **Recommend settings.** Opus medium or Sonnet for small PRs; always start with `/clear`. Check whether frontmatter can set `model` or `effort`. | The v3 burst was mostly context size × turns × Opus. | Saves | PLAN session 6 |
+| 8 | **Measure run-to-run variance.** At least 2 runs per PR before claiming any difference. | v2 and v4 found different bugs in the same PR. | Evaluation only | PLAN session 4 |
 
 ## pandas vs Matplotlib
 
