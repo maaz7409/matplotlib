@@ -1,18 +1,75 @@
-# `/mpl-review` skill vs `/code-review`: findings
+# `/mpl-review`: final report
 
-Date: 2026-10-17 · Branch: `mpl-skill` · Skill: `.claude/skills/mpl-review/SKILL.md`
+Updated 2026-11-04 · Branch `mpl-skill` · Skill `.agents/skills/mpl-review/` (v5, final)
 
-> **Read this first (updated):** the benchmark tables below measure the **first version
-> (v2)** of the skill, not the current v4. v4 was later run on the same 3 PRs (see
-> `token-report.md`). It costs much less, gave 3 of 3 correct verdicts, and made fewer wrong
-> findings than `/code-review`. **But these 3 PRs are no fair accuracy test for v4.** Two of
-> its three bug hits were helped by rules written after seeing these exact misses, and one
-> bug was only found by v4 itself. Adjusted for that, v4 and `/code-review` are about level on
-> finding bugs, or `/code-review` slightly ahead. A fair verdict needs fresh PRs (PLAN.md,
-> sessions 2 and 4). The usage figures were corrected using full GitHub API access; see
-> `stats.md`.
+## Final version (v5): what it is
 
-## TL;DR
+- **Same motivation as pandas.** Review queues are the bottleneck, so the contributor runs
+  the skill first. It catches the **obvious** problems before a maintainer looks, and their
+  time goes to what isn't obvious. It is a fast gate, not a deep audit.
+- **Layout, as in pandas since 2026-10-30:**
+  - tool-neutral `.agents/skills/mpl-review/SKILL.md` (5.8 KB), with `.claude/skills/mpl-review`
+    as a symlink to it;
+  - one `scripts/fetch_context.py` call that gathers the diff (without baseline images), the
+    changed files, which baselines changed, the compacted thread (bots dropped, comments
+    capped), and failing CI. One call replaces 4–6 agent turns.
+- **Review order:**
+  1. maintainer position;
+  2. unaddressed comments;
+  3. wrong place or no effect;
+  4. tests that can't fail;
+  5. API policy (deprecation, note, `.pyi`);
+  6. obvious correctness, via three quick checks: full membership of changed sets,
+     callers of changed code, and getter round-trips;
+  7. CI failures the diff caused.
+- **Budget:** about 8 tool calls, no subagents, capped reads and output.
+
+## Fresh test (2026-11-04): 3 PRs never seen while writing the skill
+
+The ground truth comes from Matplotlib reviewers (rcomer, iccir, scottshambaugh) plus checks
+I ran (`skill-eval/labels/fresh-set-2026-11.json`). Both tools used Opus 5.5 at high effort,
+one run each, with no thread access and no dev build in this cloud session.
+
+| PR | What reviewers said | v5 | `/code-review high` |
+|---|---|---|---|
+| **#32537** RTL text | Closed by rcomer: "a python file in the root of the repository … does not really do anything" | ✅ **finding 1**, verdict `WRONG APPROACH` · 25 s · $0.18 | ✅ but as finding **7 of 10**, after 6 bidi details and lint nits; no verdict · 44 s · $0.30 |
+| **#32504** pgf baseline | iccir: `parse_version`, `-v` flag (both **already fixed** in this head), "can it fail or return `None`?". Plus my check: the baseline now comes from pdfTeX 1.40.26 but only >1.40.26 is xfailed (not run under TeX) | ✅ baseline/xfail mismatch (1), ✅ version-parse failure (2); didn't re-report fixed items; verdict `NEEDS WORK` · 81 s · $0.35 | ✅ same two, plus two extra valid points (dirty dev build; xfail fires before the package skip); 8 findings, no verdict · 56 s · $0.38 |
+| **#32515** boxplot all-masked | Approved by scottshambaugh. I verified the crash on 3.11.2 and that the fix works | ✅ `LGTM` with 1 optional nit; reasoned that the test fails on main · 32 s · $0.23 | 6 findings on an approved PR, including a dubious "needs an API note" and two out-of-scope refactors; no verdict · 61 s · $0.42 |
+| **Total** | | **3/3 obvious problems found, 3/3 verdicts plausible, 0 false alarms · 138 s · $0.77** | 3/3 found, plus 2 extra valid points, about 3 noisy findings, no verdicts · 161 s · $1.10 |
+
+**What this shows:**
+- **Purpose met.** v5 does what it is for: obvious problems come first, clean PRs get `LGTM`,
+  and it is about 30% cheaper and faster than `/code-review high`.
+- **Depth.** `/code-review` digs deeper: on #32504 it found two more real points. That is
+  the maintainer-level depth this skill deliberately leaves to the maintainer.
+- **Untested here: the thread.** The PR-mode script was only smoke-tested with a fake `gh`
+  (the GitHub API is blocked in this cloud session). It found and fixed one bug: review dates
+  were blank.
+- **Too small to be conclusive.** That's 3 PRs and one run each. PLAN.md sessions 2 and 4
+  remain the real evaluation.
+
+## pandas status (checked 2026-11-04)
+
+- **Still in use.** Contributors post verdicts on new PRs: #71767 "VERDICT: LGTM" (Oct 29)
+  and #71823 "Ran pandas-review, verdict NITS ONLY. Added the whatsnew entry it flagged"
+  (Nov 2). #71212 (the PR that started this) was merged Oct 17.
+- **Being made official.** jbrockmendel's #70954 "DOC: Require pandas-review self-review for
+  AI-assisted PRs" moves the skill into pandas (`.agents/skills/` plus `fetch_context.py`).
+  mroeschke approved it on Nov 2 ("Happy to give this a try"), but it still has the
+  "Needs Discussion" label.
+- **Not a full gate.** On #71767 a maintainer review followed the contributor's `LGTM`, and
+  the author then pushed a change. "LGTM" from the skill means "no obvious problems", not
+  "correct". v5 says this to the author explicitly.
+
+---
+
+## History: earlier versions (v2 and v4), kept for the record
+
+The sections below measure the **first version (v2)**. v4 was later run on the same 3 PRs
+(`token-report.md`). Those 3 PRs are a *tuning* set: rules were written from their misses,
+so they are no fair accuracy test (see the bias notes in `token-report.md`).
+
+## TL;DR (2026-10-17, first version)
 
 | Question | Answer |
 |---|---|
@@ -142,7 +199,17 @@ did better on this small sample. If the goal is "send maintainers fewer, cleaner
 tell authors when to stop", the skill fits better. The two can also be combined (run both,
 about $5 per PR).
 
-## Directions for v5
+## Directions for v5 (written before v5; status below)
+
+**Status in the final v5:**
+- **Done:** 1 (full membership of changed sets), 2 (re-check anchors), 3 (grep callers),
+  4 (run code only on a real dev build, never overlays) and 7 (`/clear`, fresh session).
+- **Not done:** 5 (deep or triage mode).
+- **Still open:** 6 (thread awareness, which needs real `gh`) and 8 (variance, which needs
+  more runs).
+- **New in v5, not on this list:** the `fetch_context.py` single call, the "wrong place / no
+  effect" check, and CI failures.
+
 
 **What v4 already took from this run.** v4 kept the two rules suggested here after the v2
 benchmark: "changed baselines are claims" and "probe `'none'`, `None`, `'inherit'` and
@@ -183,15 +250,17 @@ count as evidence.
 ## How to reproduce or run it yourself
 
 ```bash
-# in a matplotlib checkout, on your PR branch, with the skill present at
-# .claude/skills/mpl-review/SKILL.md (or ~/.claude/skills/mpl-review/SKILL.md)
-claude --model claude-opus-5-5 --effort high
-> /mpl-review            # local mode: reviews the current branch vs upstream main
-> /mpl-review 32331      # PR mode: also reads the thread via `gh` (needs gh auth)
-> /code-review high      # built-in, for comparison
+# In a matplotlib checkout, copy .agents/skills/mpl-review/ from this branch and add the
+# symlink: ln -s ../../.agents/skills/mpl-review .claude/skills/mpl-review
+# Your checkout needs a remote pointing at matplotlib/matplotlib; `gh auth` is needed for PR mode.
+claude                    # start a fresh session (or /clear)
+> /mpl-review             # current branch vs upstream main
+> /mpl-review 32331       # a PR: also reads its thread and CI via gh
 ```
 
-The raw outputs of all 6 runs are in `raw/`, and the headless runner is `raw/run.sh`.
+Headless benchmark: `skill-eval/run_review.sh <clone> skill|cr <out.jsonl>`, with clones from
+`skill-eval/mk_clone.sh` and metrics from `skill-eval/tally.py`. Raw outputs: `raw/`
+(`fresh-*` for the final test).
 
 ## Limitations
 

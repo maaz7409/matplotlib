@@ -10,15 +10,16 @@ the session log at the bottom.
 | # | Session | Depends on | Status |
 |---|---|---|---|
 | 0 | Prototype, benchmark, token fix (v2 → v4) | – | ✅ done 2026-10-17 |
+| 0b | Final v5 (fast gate, `.agents/` layout, `fetch_context.py`) + 3-PR fresh test | 0 | ✅ done 2026-11-04 |
 | 1 | Make the eval harness reproducible | 0 | ⬜ |
-| 2 | Build a held-out eval set (10–12 PRs) | 1 | ⬜ |
+| 2 | Build a held-out eval set (10–12 PRs) | 1 | 🟡 3 PRs in `labels/fresh-set-2026-11.json`; need 7–9 more |
 | 3 | Working dev environment for execution | – | ⬜ |
 | 4 | Baseline: v4 vs `/code-review` on held-out, with variance | 2, 3 | ⬜ |
-| 5 | Thread awareness (PR mode with real `gh`) | 2 | ⬜ |
+| 5 | Thread awareness (PR mode with real `gh`) | 2 | ⬜ (`fetch_context.py` smoke-tested only with a fake `gh`) |
 | 6 | Token tuning: effort, model, prompt size | 4 | ⬜ |
 | 7 | Accuracy round 1: error analysis → v5 | 4 | ⬜ |
 | 8 | Robustness: unusual PRs and failure modes | 7 | ⬜ |
-| 9 | Portability: non-Claude agents and tool-neutral location | 7 | ⬜ |
+| 9 | Portability: non-Claude agents and tool-neutral location | 7 | 🟡 layout done in 0b (`.agents/skills` + symlink); agent testing open |
 | 10 | Refresh stats and finalize the reports | 4, 7 | ⬜ |
 | 11 | Upstream package: clean skill branch and issue text | 8, 9, 10 | ⬜ |
 | 12 | After maintainer feedback: iterate and maintain | 11 + user opens issue | ⬜ |
@@ -39,11 +40,9 @@ No more hand-built scratch scripts.
    - For each PR: `mk_clone.sh` → `run_review.sh` → `tally.py`.
    - Save the review text to `results/<version>/<pr>-<run>.md` and the metrics to
      `results/<version>/metrics.jsonl`.
-   - Runs are **sequential** for skill variants (they share `~/.claude/skills/mpl-review`).
-     Parallel is OK only for `cr`. Or install the skill per run into a temp project-level
-     `.claude/skills` *outside* the reviewed diff. Check whether a project-level skill in an
-     untracked dir pollutes the review (it showed up as `??` before), and pick the cleaner
-     option.
+   - Each run gets its own copy of the skill (`run_review.sh` copies it into the clone and
+     hides it via `.git/info/exclude`), so runs can go in parallel. This was verified in
+     session 0b.
 3. Add a scoring helper `score.py`. It shows each finding next to the labels and asks the
    human or Claude to mark it as hit / false positive / new-candidate. Store the marks in
    `results/<version>/scores.json` and print a summary: blockers found, false positives,
@@ -55,7 +54,7 @@ No more hand-built scratch scripts.
 
 **Deliverables:** `skill-eval/eval.py`, `score.py`, watchdog, `skill-eval/README.md`
 (≤ 40 lines).
-**Budget:** ≤ $2. **Done when:** `python skill-eval/eval.py --skill .claude/skills/mpl-review/SKILL.md --set skill-eval/labels/tuning-set.json --runs 1`
+**Budget:** ≤ $2. **Done when:** `python skill-eval/eval.py --skill .agents/skills/mpl-review --set skill-eval/labels/tuning-set.json --runs 1`
 reproduces the session-0 table.
 
 ## Session 2: build a held-out eval set (10–12 PRs)
@@ -230,7 +229,8 @@ thirds of Matplotlib's AI users don't name Claude.
 ## Session 11: upstream package (clean branch and issue text)
 
 1. Create the branch `mpl-review-skill` from **upstream** `main` with only
-   `.claude/skills/mpl-review/SKILL.md`. No CLAUDE.md, reports or eval files.
+   `.agents/skills/mpl-review/` and the `.claude/skills/mpl-review` symlink. No CLAUDE.md,
+   reports or eval files.
 2. Update `skill-reports/issue.md` with the held-out numbers. Keep it short, in plain
    language, and honest about misses and cost (about $0.3–0.6 per review, fresh session).
 3. Prepare a short "how to try it" for maintainers (copy one file, run `/mpl-review`).
@@ -256,3 +256,11 @@ thirds of Matplotlib's AI users don't name Claude.
   per review. v4 removed subagents, compacted the diff and thread, and capped execution:
   0.18–0.34M tokens, 3/3 correct verdicts and 1 false positive on the tuning set. Its raw 3/4 blocker count is biased (leakage plus one self-found bug); adjusted, it is level with `/code-review` or slightly behind. The v5 directions are in `skill-report.md`. Reverted unrelated
   `lib/` changes. Seeded `skill-eval/` and `labels/tuning-set.json`.
+- 2026-11-04 · S0b: checked pandas. `pandas-review` is still used: contributor verdicts on
+  #71767 and #71823; it moved to `.agents/skills` with `fetch_context.py`; policy PR #70954
+  was approved by mroeschke but still has "Needs Discussion". Built final v5: a fast gate for
+  obvious problems, 5.8 KB, one-call context script, `.claude` symlink.
+  Fresh test on 32537, 32504 and 32515 (one run each, Opus high):
+  - v5: 3/3 obvious problems found, plausible verdicts, 0 false alarms, $0.77, 138 s.
+  - `/code-review high`: 3/3 found plus 2 extra valid points, noisier, no verdicts, $1.10, 161 s.
+  Fixed a blank review-date bug in the script.

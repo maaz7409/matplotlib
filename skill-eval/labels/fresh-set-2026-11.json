@@ -1,0 +1,42 @@
+{
+  "_note": "FRESH set: PRs opened 2026-10-19..24, never seen while writing SKILL.md v5. Ground truth comes from Matplotlib reviewers' own comments or actions (source field), plus checks I ran. One run per tool; heads as fetched on 2026-11-04.",
+  "32537": {
+    "title": "Fixed right-to-left text that starts with a Latin word bug",
+    "head": "e970db9b",
+    "expected_verdict": "WRONG APPROACH or CLOSE",
+    "labels": [
+      {"id": "M1", "sev": "blocker", "what": "Python file added at repo root does nothing; would need to be in lib/matplotlib modules (or galleries/examples for docs)", "source": "rcomer (Member) closed the PR on 2026-10-25 with this reason"}
+    ]
+  },
+  "32504": {
+    "title": "Update pgf baseline image for TeX Live 2025",
+    "head": "dd0ed5be",
+    "expected_verdict": "NEEDS WORK (uncertain: NITS ONLY is defensible)",
+    "labels": [
+      {"id": "R1", "sev": "nit", "what": "use parse_version like existing code", "source": "iccir review 2026-11-04", "status": "already fixed in head dd0ed5be; must NOT be reported"},
+      {"id": "R2", "sev": "nit", "what": "-v may fail on old pdflatex", "source": "iccir review 2026-11-04", "status": "already fixed (now -version); must NOT be reported"},
+      {"id": "R3", "sev": "question", "what": "can _get_executable_info('pdflatex') fail/return None inside the test", "source": "iccir review 2026-11-04", "status": "open; it raises ExecutableNotFoundError (never None) if the banner regex doesn't match"},
+      {"id": "C1", "sev": "likely-blocker", "what": "baseline pgf_rcupdate2.pdf regenerated with pdfTeX 1.40.26 (TL2024, local dirty dev build) replacing a 1.40.22 (TL2022/Debian) baseline, while only versions > 1.40.26 are xfailed; older pdfTeX (CI ubuntu-22.04) now compares against a 1.40.26 output at tol=0", "source": "my check of the PTEX.Fullbanner in both PDFs; NOT verified by running TeX (no TeX here); CI result not visible"}
+    ]
+  },
+  "32515": {
+    "title": "Fix boxplot stats for all-masked input",
+    "head": "df5a8502",
+    "expected_verdict": "LGTM or NITS ONLY",
+    "labels": [],
+    "verified": "on matplotlib 3.11.2, boxplot_stats(all-masked) raises IndexError; the PR's reordering fixes it, so the new test fails on main",
+    "source": "approved by scottshambaugh 2026-10-30"
+  },
+  "results": {
+    "v5": {
+      "32537": {"verdict": "WRONG APPROACH", "M1": "hit (finding 1)", "cost": 0.18, "wall_s": 25},
+      "32504": {"verdict": "NEEDS WORK", "C1": "hit (finding 1)", "R3": "hit (finding 2)", "R1_R2_not_reported": true, "cost": 0.35, "wall_s": 81},
+      "32515": {"verdict": "LGTM", "false_positives": 0, "cost": 0.23, "wall_s": 32}
+    },
+    "code_review_high": {
+      "32537": {"verdict": "none", "M1": "hit (finding 7 of 10)", "cost": 0.30, "wall_s": 44},
+      "32504": {"verdict": "none", "C1": "hit (finding 2)", "R3": "hit (finding 1)", "R1_R2_not_reported": true, "extra_valid": "dirty dev build provenance; xfail fires before the package skip", "cost": 0.38, "wall_s": 56},
+      "32515": {"verdict": "none", "findings": 6, "note": "on an approved PR: 1 dubious (API note for crash->result fix), 2 out of scope/refactor, 3 plausible test nits", "cost": 0.42, "wall_s": 61}
+    }
+  }
+}

@@ -164,3 +164,12 @@ script for large repos.
   expect a few percent error.
 - Disclosures are self-reported, and some AI use goes undisclosed.
 - Templates differ between the repos (Matplotlib uses free text; pandas uses checkboxes).
+
+## Update 2026-11-04: is pandas still using its skill?
+
+Yes. Contributors post `pandas-review` verdicts on new PRs: #71767 ("VERDICT: LGTM", Oct 29)
+and #71823 ("Ran pandas-review, verdict NITS ONLY. Added the whatsnew entry it flagged",
+Nov 2). jbrockmendel's policy PR #70954 ("Require pandas-review self-review for AI-assisted
+PRs") moves the skill into pandas under `.agents/skills/`. mroeschke approved it on Nov 2,
+but it still has the "Needs Discussion" label. A GitHub search for "pandas-review" returns
+73 issues and PRs. These are search counts from the web UI, not an API scan.

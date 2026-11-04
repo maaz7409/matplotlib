@@ -1,74 +1,74 @@
-<!-- Draft for a GitHub issue on matplotlib/matplotlib. Use the "Maintenance" or blank template. -->
+<!-- Draft for a GitHub issue on matplotlib/matplotlib. Use the "Maintenance" or blank template.
+     Rewrite it in your own words before posting; Claude must not post it. -->
 
 ### Title
 
-[MNT]: Offer an optional `mpl-review` self-review skill for contributors who already use AI agents
+[MNT]: Optional `mpl-review` self-check, so AI-assisted PRs arrive without the obvious problems
 
 ### Summary
 
-Some contributors already use AI coding agents (Claude Code, Codex, Copilot, Cursor and
-others). pandas recently added a `/pandas-review` skill (a short Markdown file of
-instructions for the agent). Before asking for review, a contributor runs it on their own PR,
-and it checks the PR "the way a maintainer would". It prints findings and a verdict in the
-terminal. It never posts to GitHub and never edits code. pandas maintainers now ask
-contributors to run it and to say the result on the PR.
+pandas has a review queue problem similar to ours. Its maintainers now ask contributors who
+use AI agents to run a small "self-review" skill on their own PR before asking for review:
+`pandas-review`, proposed for their contributing guide in pandas#70954. The skill is a short
+Markdown file of instructions for the agent. It prints findings and a verdict (`LGTM`,
+`NITS ONLY`, `NEEDS WORK`, …) in the contributor's terminal, and it never posts to GitHub or
+edits code. Contributors there now report verdicts such as "Ran pandas-review, verdict NITS
+ONLY. Added the whatsnew entry it flagged".
 
 I'd like to ask whether Matplotlib wants something similar, and if so, in what form.
 
 ### Why it might help
 
-- When contributors use agents, the agent is usually never asked to check the work against
-  *Matplotlib's* rules. Typical things that slip through: a behavior change with no
-  deprecation or `next_api_changes` note, a missing `.pyi` stub update, a new baseline image
-  where `check_figures_equal` would do, or edge cases such as NaN, empty input, units or
-  `\overset`.
-- A self-check that runs **before** a maintainer looks could catch some of this, so review
-  time goes to design questions instead.
+Since mid-August, about 45% of our PRs say in their AI Disclosure that AI was used. Over the
+last 6 months those PRs were closed unmerged about twice as often as others. Many fail on
+**obvious** things a maintainer spots in a minute:
+- a file in the wrong place that does nothing;
+- a bugfix with no test, or a test that would pass on `main`;
+- a behavior change with no deprecation or `next_api_changes` note;
+- a missing `.pyi` stub;
+- a baseline image changed without a reason.
+
+A quick check that the contributor runs **before** a maintainer looks could catch those, so
+maintainer time goes to the problems that are not obvious.
 
 ### What I tried
 
-I wrote a draft skill (`.claude/skills/mpl-review/SKILL.md`, about 6 KB, adapted from the
-pandas one). I tried it on 3 open PRs and compared it with a generic AI code review using the
-same model and settings. Short version:
+I wrote a draft, `mpl-review`: a 6 KB skill plus one small script that gathers the diff, the
+review thread and failing CI in one go. It is tuned to be **fast and cheap**: about 25–80
+seconds and $0.18–0.35 per review on Claude Opus. It deliberately doesn't hunt for subtle
+bugs.
 
-- **Bugs found:** about the same as a generic AI review, or slightly fewer. Each found
-  different real bugs, and every tool missed at least one regression, so this is **not**
-  a replacement for maintainer review. At best it is a filter that catches obvious things
-  earlier.
-- **Noise:** much lower. The generic review reported about 9 findings that were false or
-  speculative; the current skill reported 1.
-- **Verdicts:** the skill gives one, and it was right on all 3 PRs. On a small, correct PR it
-  said "LGTM" and explained why, while the generic review gave the author 4 "issues" to chase.
-- **Cost:** about $0.30–0.60 per review on Opus.
-- **Caveat:** this was only 3 PRs, and I tuned the skill on them. I'll test it on fresh PRs
-  before claiming anything stronger.
-- Details are in the linked report: <link to skill-report.md>.
+I tried it on 3 recent PRs I hadn't used while writing it, and compared it with a generic AI
+code review using the same model:
 
-### Usage numbers (rough)
+- **#32537:** it flagged first exactly what the closing reviewer said: the file sits at the
+  repository root and does nothing.
+- **#32504:** it flagged the baseline/xfail mismatch and the fragile version check. It didn't
+  re-raise the points the author had already fixed after review.
+- **#32515** (approved): it said `LGTM`. The generic review raised 6 points on this approved
+  PR.
+- **Compared with the generic review:** that review digs deeper and found two extra valid
+  points on #32504, but it gives no verdict, is noisier on clean PRs, and cost about 40%
+  more.
 
-Since mid-August 2026, about 45% of Matplotlib PRs say in their AI Disclosure that AI was
-used. That is similar to pandas once its single heaviest user is excluded. Over the last 6
-months, PRs that disclose AI were closed unmerged about twice as often as other PRs. So this
-group is large, and its PRs are often the expensive ones to review.
-
-One review with the skill costs roughly $0.30–0.60 on Opus and takes 1–3 minutes, as long as
-it is run in a fresh session.
+This is a small sample (3 PRs, one run each), and "LGTM" from the skill only means "nothing
+obvious", not "correct". Details: <link to skill-report.md>.
 
 ### Open questions for maintainers
 
 1. Is this welcome at all, given our [AI policy](https://matplotlib.org/devdocs/devel/contribute.html#use-of-generative-ai)?
-   I'd suggest it stays **optional** and is never required. People who don't use AI are
-   unaffected, and the skill tells the contributor not to paste its output into GitHub and
-   to answer reviewers in their own words.
-2. Should it live in the repo (`.claude/skills/` or a tool-neutral location), or be linked
-   from the developer guide as an external file?
-3. Would an `AGENTS.md` (suggested in #30848 and #31457) be the better first step, with the
-   review skill as a follow-up?
+   I'd suggest it stays **optional**: contributors who don't use AI are unaffected, and the
+   skill tells authors not to paste its output and to reply to reviewers in their own words.
+2. Where should it live? pandas uses the tool-neutral `.agents/skills/` (with a
+   `.claude/skills` symlink), so Codex, Copilot, Cursor and others can use it too. The
+   alternative is a page in the developer guide.
+3. Would an `AGENTS.md` (suggested in #30848 and #31457) be a better first step, with this
+   skill as a follow-up?
 
-If there's interest, I'm happy to open a PR with the draft skill and adjust it to whatever
-conventions you prefer.
+If there's interest, I'm happy to open a PR with the draft and adjust it to whatever you
+prefer.
 
 ### AI disclosure
 
-I used Claude Code to collect the usage numbers, draft the skill, and run the comparison.
-I checked the findings myself, and this issue text is my own.
+I used Claude Code to collect the numbers, draft the skill, and run the comparison. I checked
+the findings myself, and this issue text is my own.

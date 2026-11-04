@@ -1,4 +1,4 @@
-# Why `/mpl-review` v3 burned the session limit, and the lean v4
+# `/mpl-review` token use: why v3 burned the limit, and the lean v4 and v5
 
 All numbers are measured from headless runs (`claude -p --output-format stream-json`) with
 the same model (`claude-opus-5-5`) and effort (`high`), on fresh clones of the same open PRs.
@@ -16,6 +16,15 @@ Each API call's `usage` block was summed.
 | v4 | 32331 | 7 | **308k** | 32k | 15k | **$0.62** | 164 s |
 | v4 | 32285 | 4 | **157k** | 20k | 7k | **$0.33** | 72 s |
 | `/code-review high` (for reference) | all 3 | – | 1,436k | 179k | 35k | $1.88 | 365 s |
+| **v5 final** (fresh set) | 32537 | 4 | **146k** | 15k | 2k | **$0.18** | 25 s |
+| v5 | 32504 | 7 | 284k | 22k | 6k | $0.35 | 81 s |
+| v5 | 32515 | 6 | 230k | 17k | 3k | $0.23 | 32 s |
+| `/code-review high` (fresh set) | all 3 | 3 main + 18 subagent | 556k | 127k | 15k | $1.10 | 161 s |
+
+v5 ran on a different PR set from v2 and v4, so compare it with `/code-review` on the same
+fresh set. There v5 cost 30% less ($0.77 vs $1.10) and wrote less than half as many cache
+tokens (54k vs 127k): `/code-review` spins up subagents, each paying a cold cache write. The
+`fetch_context.py` single call keeps v5 at 4–7 model calls per review.
 
 On #32331, **v4 used about 12× fewer cache-read tokens and at most a sixth of the cost of
 v3**, and it finished the review. Across all 3 PRs, v4 used **about 4× fewer tokens than v2
